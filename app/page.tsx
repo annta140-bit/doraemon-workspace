@@ -7,6 +7,8 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
 } from "react";
 import { createDrawingPreviewBase64, DrawingPreview, HandwritingCanvas } from "./handwriting-canvas";
 import {
@@ -45,6 +47,60 @@ import {
 type SaveState = "saved" | "saving" | "error";
 type SyncState = "local" | "pending" | "syncing" | "done" | "conflict" | "error";
 type CanvasSnapshot = { strokes: Stroke[]; drawing?: string };
+type IconName =
+  | "archive"
+  | "check"
+  | "chevron"
+  | "clock"
+  | "cloud"
+  | "done"
+  | "eraser"
+  | "filter"
+  | "folder"
+  | "grid"
+  | "list"
+  | "marker"
+  | "more"
+  | "note"
+  | "pen"
+  | "plus"
+  | "redo"
+  | "search"
+  | "sparkles"
+  | "undo"
+  | "x";
+
+function UiIcon({ name, size = 20, className }: { name: IconName; size?: number; className?: string }) {
+  const paths: Record<IconName, ReactNode> = {
+    archive: <><rect x="3" y="5" width="18" height="15" rx="3" /><path d="M8 3h8l2 2H6l2-2Z" /><path d="M9 10h6" /></>,
+    check: <><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><path d="m8 12 2.6 2.6L16.5 9" /></>,
+    chevron: <path d="m9 18 6-6-6-6" />,
+    clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,
+    cloud: <><path d="M7.5 18.5h9a4 4 0 0 0 .6-7.95A5.8 5.8 0 0 0 6 9.3a4.6 4.6 0 0 0 1.5 9.2Z" /><path d="m9.5 14 2.5-2.5 2.5 2.5M12 11.5v6" /></>,
+    done: <><circle cx="12" cy="12" r="9" /><path d="m8 12.2 2.5 2.5 5.7-6" /></>,
+    eraser: <><path d="m4.5 15.5 7.7-9a2 2 0 0 1 3-.2l2.4 2.1a2 2 0 0 1 .2 3l-6.5 7.2H7.2l-2.5-2a.8.8 0 0 1-.2-1.1Z" /><path d="m10.3 8.7 5 4.3M11.2 18.5h8" /></>,
+    filter: <path d="M4 6h16M7 12h10M10 18h4" />,
+    folder: <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h4l2 2h6a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5v-9Z" />,
+    grid: <><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></>,
+    list: <><path d="M9 6h11M9 12h11M9 18h11" /><circle cx="4.5" cy="6" r="1" fill="currentColor" stroke="none" /><circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none" /></>,
+    marker: <><path d="m7 16 8.5-10 3 2.5-8.5 10H7v-2.5Z" /><path d="M5 20h14" /></>,
+    more: <><circle cx="5" cy="12" r="1.35" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.35" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.35" fill="currentColor" stroke="none" /></>,
+    note: <><path d="M6 3.5h9l3 3V20H6a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2Z" /><path d="M14.5 3.5V7H18M8 11h6M8 15h7" /></>,
+    pen: <><path d="m5 19 1-4L16.5 4.5a2 2 0 0 1 2.8 0l.2.2a2 2 0 0 1 0 2.8L9 18l-4 1Z" /><path d="m14.5 6.5 3 3M6 15l3 3" /></>,
+    plus: <path d="M12 5v14M5 12h14" />,
+    redo: <><path d="m15 7 4 4-4 4" /><path d="M19 11h-7a7 7 0 0 0-7 7" /></>,
+    search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 4 4" /></>,
+    sparkles: <><path d="M12 3.5c.5 3 2 4.5 5 5-3 .5-4.5 2-5 5-.5-3-2-4.5-5-5 3-.5 4.5-2 5-5Z" /><path d="M18 14.5c.25 1.6 1.1 2.4 2.6 2.7-1.5.3-2.35 1.1-2.6 2.8-.25-1.7-1.1-2.5-2.6-2.8 1.5-.3 2.35-1.1 2.6-2.7ZM5 14c.2 1.2.8 1.8 2 2-.2 1.2-.8 1.8-2 2-.2-1.2-.8-1.8-2-2 1.2-.2 1.8-.8 2-2Z" /></>,
+    undo: <><path d="m9 7-4 4 4 4" /><path d="M5 11h7a7 7 0 0 1 7 7" /></>,
+    x: <path d="m6.5 6.5 11 11m0-11-11 11" />,
+  };
+
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
 
 const EMPTY_SYNC: SyncMetadata = {
   shas: {},
@@ -61,14 +117,14 @@ type StarterPlaceholderState = {
   untouched: boolean;
 };
 
-const NAV_ITEMS: { id: SidebarFilter; label: string; icon: string }[] = [
-  { id: "all", label: "الكل", icon: "▦" },
-  { id: "raw", label: "الملاحظات الخام", icon: "▤" },
-  { id: "tasks", label: "المهام", icon: "✓" },
-  { id: "projects", label: "المشاريع", icon: "▱" },
-  { id: "queued", label: "بانتظار التنظيم", icon: "✦" },
-  { id: "deferred", label: "المؤجل", icon: "◷" },
-  { id: "done", label: "المنجز", icon: "◉" },
+const NAV_ITEMS: { id: SidebarFilter; label: string; icon: IconName }[] = [
+  { id: "all", label: "الكل", icon: "grid" },
+  { id: "raw", label: "الملاحظات الخام", icon: "note" },
+  { id: "tasks", label: "المهام", icon: "check" },
+  { id: "projects", label: "المشاريع", icon: "folder" },
+  { id: "queued", label: "بانتظار التنظيم", icon: "sparkles" },
+  { id: "deferred", label: "المؤجل", icon: "clock" },
+  { id: "done", label: "المنجز", icon: "done" },
 ];
 
 const STATUS_LABELS: Record<Note["status"], string> = {
@@ -147,6 +203,7 @@ export default function Home() {
   const [taskDraft, setTaskDraft] = useState("");
   const [projectDraft, setProjectDraft] = useState({ name: "", icon: "◉", nextAction: "" });
   const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
 
   const notesRef = useRef(notes);
   const projectsRef = useRef(projects);
@@ -160,6 +217,8 @@ export default function Home() {
   const starterPlaceholderRef = useRef<StarterPlaceholderState | null>(null);
   const undoByNoteRef = useRef<Record<string, CanvasSnapshot[]>>({});
   const redoByNoteRef = useRef<Record<string, CanvasSnapshot[]>>({});
+  const inspectorRef = useRef<HTMLElement | null>(null);
+  const inspectorReturnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => { notesRef.current = notes; }, [notes]);
   useEffect(() => { projectsRef.current = projects; }, [projects]);
@@ -167,6 +226,22 @@ export default function Home() {
   useEffect(() => { syncMetaRef.current = syncMeta; }, [syncMeta]);
   useEffect(() => { configRef.current = githubConfig; }, [githubConfig]);
   useEffect(() => { tokenRef.current = githubToken; }, [githubToken]);
+
+  useEffect(() => {
+    if (!mobileInspectorOpen) return;
+    const frame = window.requestAnimationFrame(() => inspectorRef.current?.focus());
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileInspectorOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", closeOnEscape);
+      const trigger = inspectorReturnFocusRef.current;
+      inspectorReturnFocusRef.current = null;
+      if (trigger?.isConnected) window.requestAnimationFrame(() => trigger.focus());
+    };
+  }, [mobileInspectorOpen]);
 
   const selectedNote = notes.find((note) => note.id === selectedId) ?? notes[0];
 
@@ -835,6 +910,7 @@ export default function Home() {
     setNotes(notesRef.current);
     setSelectedId(note.id);
     selectedIdRef.current = note.id;
+    setMobileInspectorOpen(false);
     markNoteDirty(note.id);
     setView("capture");
     setToast("تم إنشاء ملاحظة وحفظها على الجهاز");
@@ -937,9 +1013,38 @@ export default function Home() {
   const selectProject = (projectId: string) => {
     const note = notes.find((item) => item.projectId === projectId);
     if (note) setSelectedId(note.id);
+    setMobileInspectorOpen(false);
     setFocusedProjectId(projectId);
     setShowAllNotes(true);
     setFilter("projects");
+  };
+
+  const openNoteDetails = (noteId: string, trigger: HTMLElement) => {
+    setSelectedId(noteId);
+    if (window.matchMedia("(max-width: 1000px)").matches) {
+      inspectorReturnFocusRef.current = trigger;
+      setMobileInspectorOpen(true);
+    }
+  };
+
+  const trapInspectorFocus = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (!mobileInspectorOpen || event.key !== "Tab") return;
+    const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
+      "button:not([disabled]), input:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex='-1'])",
+    )).filter((element) => element.offsetParent !== null);
+    if (!focusable.length) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === event.currentTarget)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   };
 
   const changeGithubConfig = (nextConfig: GitHubConfig) => {
@@ -977,18 +1082,20 @@ export default function Home() {
       ? "منظمة"
       : "خام";
 
-  const syncButtonLabel = syncState === "syncing"
-    ? "GitHub …"
+  const syncStatusLabel = syncState === "syncing"
+    ? "GitHub · يزامن الآن"
     : syncState === "done"
-      ? "GitHub ✓"
+      ? "GitHub · متزامن"
       : syncState === "conflict" || syncState === "error"
-        ? "GitHub !"
+        ? "GitHub · يحتاج انتباهًا"
         : syncState === "pending"
-          ? "GitHub ↑"
-          : "GitHub";
+          ? "GitHub · تغييرات معلّقة"
+          : githubToken
+            ? "GitHub · جاهز"
+            : "GitHub · غير مرتبط";
 
   if (!hydrated) {
-    return <main className="workspace-gate" dir="rtl"><div><span className="brand-mark" aria-hidden="true">◉</span><h1>مساحة Doraemon</h1><p>أفتح ملاحظاتك المحفوظة بأمان…</p></div></main>;
+    return <main className="workspace-gate" dir="rtl"><div><span className="brand-mark" aria-hidden="true" /><h1>مساحة Doraemon</h1><p>أفتح ملاحظاتك المحفوظة بأمان…</p></div></main>;
   }
 
   if (loadError) {
@@ -999,52 +1106,59 @@ export default function Home() {
     <main className={`workspace-shell ${view === "capture" ? "capture-mode" : "browse-mode"}`} dir="rtl">
       <header className="topbar">
         <button className="brand" type="button" onClick={() => setView("browse")} aria-label="العودة إلى مساحة العمل">
-          <span className="brand-mark" aria-hidden="true">◉</span>
-          <span>مساحة <b>Doraemon</b></span>
-          <span className="chevron">‹</span>
+          <span className="brand-mark" aria-hidden="true" />
+          <span className="brand-copy"><b>Doraemon</b><small>مساحة أفكارك</small></span>
+          <UiIcon name="chevron" size={18} className="chevron" />
         </button>
         <nav className="view-tabs" aria-label="طريقة العرض">
-          <button className={view === "browse" ? "active" : ""} onClick={() => setView("browse")} type="button">تصفّح</button>
-          <button className={view === "capture" ? "active" : ""} onClick={() => setView("capture")} type="button"><span>✎</span> التقاط</button>
+          <button className={view === "browse" ? "active" : ""} onClick={() => setView("browse")} type="button"><UiIcon name="grid" size={18} /><span>تصفّح</span></button>
+          <button className="mobile-quick-create" onClick={createNote} type="button" aria-label="إنشاء ملاحظة جديدة"><UiIcon name="plus" size={22} /><span>جديدة</span></button>
+          <button className={view === "capture" ? "active" : ""} onClick={() => setView("capture")} type="button"><UiIcon name="pen" size={18} /><span>التقاط</span></button>
         </nav>
         <div className="top-actions">
-          <button className={`save-pill ${saveState === "error" ? "has-error" : ""}`} type="button" onClick={() => setSettingsOpen(true)}>
+          <button className={`system-status ${syncState} ${saveState === "error" ? "has-error" : ""}`} type="button" onClick={() => setSettingsOpen(true)} aria-label="حالة الحفظ والمزامنة">
             <span className={saveState === "saved" ? "status-dot" : saveState === "saving" ? "status-dot saving" : "status-dot error"} />
-            {saveState === "saved" ? "محفوظ على الجهاز" : saveState === "saving" ? "جارٍ الحفظ…" : "الحفظ يحتاج انتباهًا"}
-          </button>
-          <button className={`github-button ${syncState}`} type="button" onClick={() => setSettingsOpen(true)} aria-label="إعداد مزامنة GitHub">
-            {syncButtonLabel}
+            <span className="status-copy">
+              <b>{saveState === "saved" ? "محفوظ بأمان" : saveState === "saving" ? "جارٍ الحفظ…" : "الحفظ يحتاج انتباهًا"}</b>
+              <small>{syncStatusLabel}</small>
+            </span>
+            <UiIcon name="cloud" size={19} />
           </button>
         </div>
       </header>
 
       <aside className="sidebar">
-        <div className="sidebar-spacer" />
+        <div className="sidebar-heading"><span>المكتبة</span><small>{notes.length} ملاحظة</small></div>
         <div className="nav-list">
           {NAV_ITEMS.map((item) => (
-            <button key={item.id} className={filter === item.id ? "nav-item active" : "nav-item"} type="button" onClick={() => { setFilter(item.id); setFocusedProjectId(null); setShowAllNotes(true); setView("browse"); }}>
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+            <button key={item.id} className={filter === item.id ? "nav-item active" : "nav-item"} type="button" onClick={() => { setFilter(item.id); setFocusedProjectId(null); setMobileInspectorOpen(false); setShowAllNotes(true); setView("browse"); }}>
+              <span className="nav-icon"><UiIcon name={item.icon} size={20} /></span>
               <span>{item.label}</span>
               <span className="nav-count">{counts[item.id]}</span>
             </button>
           ))}
         </div>
         <div className="filter-block">
-          <div className="filter-title"><span>▽</span> الحالة</div>
+          <div className="filter-title"><UiIcon name="filter" size={18} /> الحالة</div>
           <div><i className="swatch raw" />غير مرتبة <span>{counts.raw}</span></div>
           <div><i className="swatch queued" />بانتظار Codex <span>{counts.queued}</span></div>
           <div><i className="swatch organized" />تم تنظيمها <span>{notes.filter((note) => note.organization.state === "organized").length}</span></div>
         </div>
-        <button className="new-note" type="button" onClick={createNote}><span>＋</span> ملاحظة جديدة</button>
+        <button className="new-note" type="button" onClick={createNote}><UiIcon name="plus" size={20} /> ملاحظة جديدة</button>
       </aside>
 
       {view === "browse" ? (
         <section className="browse-view">
           <div className="browse-toolbar">
-            <div className="search-box"><span aria-hidden="true">⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث في الملاحظات والمشاريع والمهام" aria-label="بحث" /></div>
-            <div className="layout-switch" aria-label="تخطيط العرض">
-              <button className={layout === "list" ? "active" : ""} onClick={() => setLayout("list")} type="button">☷ <span>قائمة</span></button>
-              <button className={layout === "grid" ? "active" : ""} onClick={() => setLayout("grid")} type="button">▦ <span>شبكة</span></button>
+            <div className="search-box"><UiIcon name="search" size={20} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث في الملاحظات والمشاريع والمهام" aria-label="بحث" /></div>
+            <div className="toolbar-controls">
+              <label className="mobile-filter"><UiIcon name="filter" size={18} /><select value={filter} aria-label="تصفية المحتوى" onChange={(event) => { setFilter(event.target.value as SidebarFilter); setFocusedProjectId(null); setMobileInspectorOpen(false); setShowAllNotes(true); }}>
+                {NAV_ITEMS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select></label>
+              <div className="layout-switch" aria-label="تخطيط العرض">
+                <button className={layout === "list" ? "active" : ""} onClick={() => setLayout("list")} type="button"><UiIcon name="list" size={18} /><span>قائمة</span></button>
+                <button className={layout === "grid" ? "active" : ""} onClick={() => setLayout("grid")} type="button"><UiIcon name="grid" size={18} /><span>شبكة</span></button>
+              </div>
             </div>
           </div>
 
@@ -1056,18 +1170,20 @@ export default function Home() {
             {displayedNotes.length ? (
               <div className={`note-grid ${layout === "list" ? "list" : ""}`}>
                 {displayedNotes.map((note) => (
-                  <article key={note.id} className={`note-card accent-${note.accent} ${selectedId === note.id ? "selected" : ""}`} onClick={() => setSelectedId(note.id)}>
-                    <div className="card-top"><time>{formatTime(note.createdAt)}</time><span className={`organization-dot ${note.organization.state}`}>{note.organization.state === "queued" ? "✦ ينتظر" : note.organization.state === "organized" ? "✓ منظم" : "خام"}</span></div>
-                    <div className="note-ink">
-                      {note.strokes.length || note.drawing ? <DrawingPreview strokes={note.strokes} legacyDrawing={note.drawing} /> : <><h3>{note.title}</h3><p>{note.summary || "ملاحظة جاهزة للكتابة بالقلم"}</p></>}
-                    </div>
-                    <div className="card-bottom"><span className={`tag tag-${note.status}`}>{STATUS_LABELS[note.status]}</span><button type="button" onClick={(event) => { event.stopPropagation(); setSelectedId(note.id); setView("capture"); }}>فتح بالقلم</button></div>
+                  <article key={note.id} className={`note-card accent-${note.accent} ${selectedId === note.id ? "selected" : ""}`}>
+                    <button className="note-card-main" type="button" aria-label={`فتح تفاصيل ${note.title}`} onClick={(event) => openNoteDetails(note.id, event.currentTarget)}>
+                      <div className="card-top"><time>{formatTime(note.createdAt)}</time><span className={`organization-dot ${note.organization.state}`}>{note.organization.state === "queued" ? <><UiIcon name="sparkles" size={12} /> ينتظر</> : note.organization.state === "organized" ? <><UiIcon name="done" size={12} /> منظم</> : "خام"}</span></div>
+                      <div className="note-ink">
+                        {note.strokes.length || note.drawing ? <DrawingPreview strokes={note.strokes} legacyDrawing={note.drawing} /> : <div className="blank-note-preview"><UiIcon name="pen" size={28} /><p>{note.summary || "مساحة هادئة جاهزة لفكرتك"}</p></div>}
+                      </div>
+                    </button>
+                    <div className="card-bottom"><div className="card-copy"><strong>{note.title}</strong><span className={`tag tag-${note.status}`}>{STATUS_LABELS[note.status]}</span></div><button type="button" aria-label={`فتح ${note.title} بالقلم`} onClick={(event) => { event.stopPropagation(); setSelectedId(note.id); setMobileInspectorOpen(false); setView("capture"); }}><UiIcon name="pen" size={17} /><span>فتح</span></button></div>
                   </article>
                 ))}
               </div>
-            ) : <div className="empty-state"><span>⌕</span><h3>لا توجد نتائج</h3><p>غيّر الفلتر أو أنشئ ملاحظة جديدة.</p><button type="button" onClick={createNote}>ملاحظة جديدة</button></div>}
+            ) : <div className="empty-state"><UiIcon name="search" size={34} /><h3>لا توجد نتائج</h3><p>غيّر الفلتر أو أنشئ ملاحظة جديدة.</p><button type="button" onClick={createNote}><UiIcon name="plus" size={18} /> ملاحظة جديدة</button></div>}
 
-            <div className="section-heading projects-heading"><div><h2>المشاريع</h2><small>{visibleProjects.length} مشروع</small></div><button type="button" onClick={() => setProjectModalOpen(true)}>＋ مشروع جديد</button></div>
+            <div className="section-heading projects-heading"><div><h2>المشاريع</h2><small>{visibleProjects.length} مشروع</small></div><button type="button" onClick={() => setProjectModalOpen(true)}><UiIcon name="plus" size={17} /> مشروع جديد</button></div>
             {visibleProjects.length ? <div className="project-grid">
               {visibleProjects.map((project) => {
                 const projectNotes = notes.filter((note) => note.projectId === project.id);
@@ -1075,72 +1191,75 @@ export default function Home() {
                 const progress = projectProgress(project.id, notes);
                 return (
                   <button key={project.id} className={`project-card accent-${project.accent} ${focusedProjectId === project.id ? "selected" : ""}`} type="button" onClick={() => selectProject(project.id)}>
-                    <div className="project-hero"><span>{project.icon}</span><h3>{project.name}</h3><p>{taskCount} مهام · {projectNotes.length} ملاحظات</p></div>
-                    <div className="project-details"><small>الإجراء التالي</small><p>{project.nextAction}</p><div className="progress-row"><b>{progress}%</b><div><i style={{ width: `${progress}%` }} /></div></div></div>
+                    <div className="project-hero"><span className="project-icon">{project.icon}</span><div><h3>{project.name}</h3><p>{taskCount} مهام · {projectNotes.length} ملاحظات</p></div><UiIcon name="chevron" size={18} /></div>
+                    <div className="project-details"><div className="project-next"><small>الإجراء التالي</small><p>{project.nextAction || "حدّد الخطوة القادمة"}</p></div><div className="progress-row"><b>{progress}%</b><div><i style={{ width: `${progress}%` }} /></div></div></div>
                   </button>
                 );
               })}
             </div> : <div className="empty-projects"><p>أنشئ مشروعًا ثم اربط الملاحظات به.</p><button type="button" onClick={() => setProjectModalOpen(true)}>إنشاء أول مشروع</button></div>}
           </div>
 
-          <aside className="detail-panel">
+          <aside ref={inspectorRef} className={`detail-panel ${mobileInspectorOpen ? "mobile-open" : ""}`} role={mobileInspectorOpen ? "dialog" : undefined} aria-modal={mobileInspectorOpen ? true : undefined} aria-label={mobileInspectorOpen ? "تفاصيل الملاحظة" : undefined} tabIndex={mobileInspectorOpen ? -1 : undefined} onKeyDown={trapInspectorFocus}>
             {selectedNote && (!focusedProjectId || selectedNote.projectId === focusedProjectId) ? <>
+              <div className="inspector-header"><div><span>تفاصيل الملاحظة</span><h2>{selectedNote.title}</h2></div><button className="inspector-close" type="button" onClick={() => setMobileInspectorOpen(false)} aria-label="إغلاق التفاصيل"><UiIcon name="x" size={20} /></button></div>
               <div className="detail-time"><time>{formatTime(selectedNote.createdAt)}</time><span className={`organization-badge ${selectedNote.organization.state}`}>{organizationLabel}</span></div>
               <div className="detail-note">
-                {selectedNote.strokes.length || selectedNote.drawing ? <DrawingPreview strokes={selectedNote.strokes} legacyDrawing={selectedNote.drawing} /> : <><h2>{selectedNote.title}</h2><p>{selectedNote.summary || "لا يوجد نص مكتوب بعد."}</p></>}
+                {selectedNote.strokes.length || selectedNote.drawing ? <DrawingPreview strokes={selectedNote.strokes} legacyDrawing={selectedNote.drawing} /> : <div className="detail-empty-preview"><UiIcon name="pen" size={28} /><p>{selectedNote.summary || "لا توجد كتابة بعد. افتح الورقة وابدأ فكرتك."}</p></div>}
               </div>
               <div className="detail-actions-row">
                 <span className={`tag tag-${selectedNote.status}`}>{STATUS_LABELS[selectedNote.status]}</span>
-                <button type="button" onClick={() => updateNote(selectedNote.id, (note) => ({ ...note, deferred: !note.deferred }))}>{selectedNote.deferred ? "مؤجلة ◷" : "تأجيل"}</button>
+                <button type="button" onClick={() => updateNote(selectedNote.id, (note) => ({ ...note, deferred: !note.deferred }))}><UiIcon name="clock" size={14} /> {selectedNote.deferred ? "مؤجلة" : "تأجيل"}</button>
               </div>
-              <div className="converted-title"><span>✦</span> النتائج المنظمة</div>
+              <div className="converted-title"><UiIcon name="sparkles" size={16} /> النتائج المنظمة</div>
               <div className="detail-box tasks-box">
                 <div><h3>مهام</h3><span>{selectedNote.tasks.length}</span></div>
                 {selectedNote.tasks.length ? selectedNote.tasks.map((task) => (
                   <label key={task.id} className={task.done ? "done" : ""}><input type="checkbox" checked={task.done} onChange={() => toggleTask(selectedNote.id, task.id)} /><span>{task.title}</span><time>{task.due}</time></label>
                 )) : <p className="muted">ستظهر هنا المهام التي أنظمها، ويمكنك إضافة مهمة الآن.</p>}
-                <form className="quick-task-form" onSubmit={addTask}><input value={taskDraft} onChange={(event) => setTaskDraft(event.target.value)} placeholder="مهمة جديدة…" aria-label="مهمة جديدة" /><button type="submit">＋</button></form>
+                <form className="quick-task-form" onSubmit={addTask}><input value={taskDraft} onChange={(event) => setTaskDraft(event.target.value)} placeholder="مهمة جديدة…" aria-label="مهمة جديدة" /><button type="submit" aria-label="إضافة المهمة"><UiIcon name="plus" size={17} /></button></form>
               </div>
               <div className="detail-box linked-box"><h3>مشروع مرتبط</h3><select value={selectedNote.projectId ?? ""} onChange={(event) => updateNote(selectedNote.id, (note) => ({ ...note, projectId: event.target.value || undefined, status: event.target.value ? "linked" : note.organization.state === "organized" ? "organized" : "raw" }))}><option value="">غير مرتبط بعد</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.icon} {project.name}</option>)}</select></div>
-              <button className="open-capture" type="button" onClick={() => setView("capture")}>فتح الملاحظة بالقلم</button>
-            </> : <div className="project-detail-empty"><span>▱</span><h3>لا توجد ملاحظات في هذا المشروع</h3><p>افتح ملاحظة واربطها بالمشروع من هذه اللوحة.</p></div>}
+              <button className="open-capture" type="button" onClick={() => { setMobileInspectorOpen(false); setView("capture"); }}><UiIcon name="pen" size={18} /> فتح الملاحظة بالقلم</button>
+            </> : <div className="project-detail-empty"><UiIcon name="folder" size={28} /><h3>لا توجد ملاحظات في هذا المشروع</h3><p>افتح ملاحظة واربطها بالمشروع من هذه اللوحة.</p></div>}
           </aside>
         </section>
       ) : (
         <section className="capture-view">
           <aside className="notes-rail">
-            <h2>ملاحظاتك <span>▤</span></h2>
+            <div className="rail-heading"><div><span>دفتر الملاحظات</span><h2>ملاحظاتك</h2></div><UiIcon name="note" size={21} /></div>
             <div className="rail-scroll">
               {notes.map((note) => (
                 <button key={note.id} className={selectedId === note.id ? "rail-note active" : "rail-note"} type="button" onClick={() => setSelectedId(note.id)}>
-                  <div><time>{formatTime(note.createdAt)}</time><span>{note.organization.state === "queued" ? "✦" : ""}</span></div>
+                  <div><time>{formatTime(note.createdAt)}</time>{note.organization.state === "queued" && <UiIcon name="sparkles" size={13} />}</div>
                   {note.strokes.length || note.drawing ? <DrawingPreview strokes={note.strokes} legacyDrawing={note.drawing} /> : <><strong>{note.title}</strong><p>{note.summary || "ابدأ الكتابة"}</p></>}
                   <small>{note.organization.state === "queued" ? "بانتظار Codex" : STATUS_LABELS[note.status]}</small>
                 </button>
               ))}
             </div>
-            <button className="new-note" type="button" onClick={createNote}><span>＋</span> ملاحظة جديدة</button>
+            <button className="new-note" type="button" onClick={createNote}><UiIcon name="plus" size={20} /> ملاحظة جديدة</button>
           </aside>
 
           <div className="capture-main">
-            <div className="capture-hint"><span>✦</span> اكتب بحرية؛ تُحفظ الضربة على الجهاز ثم تُزامن بعد توقفك</div>
+            <div className="capture-hint"><div><UiIcon name="sparkles" size={17} /><span>مساحة كتابة هادئة</span></div><small>كل ضربة تُحفظ على جهازك ثم تُزامن بأمان</small></div>
             <label className="mobile-note-picker"><span>الملاحظة</span><select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>{notes.map((note) => <option key={note.id} value={note.id}>{note.title}</option>)}</select></label>
-            <div className="paper-wrap">
+            <div className="capture-controls">
               <input className="note-title-input" value={selectedNote?.title ?? ""} onChange={(event) => selectedNote && updateNote(selectedNote.id, (note) => ({ ...note, title: event.target.value }))} aria-label="عنوان الملاحظة" />
-              {selectedNote && <HandwritingCanvas noteId={selectedNote.id} strokes={selectedNote.strokes} legacyDrawing={selectedNote.drawing} tool={tool} ink={ink} penOnly={penOnly} onStrokeStart={markStrokeStarted} onAddStroke={addStroke} />}
-              {selectedNote && !selectedNote.strokes.length && !selectedNote.drawing && <div className="canvas-placeholder"><span>✎</span><p>ابدأ الكتابة أو الرسم بالقلم هنا</p><small>كل ضربة تُحفظ فورًا في مساحة آمنة على هذا الجهاز</small></div>}
               <div className="drawing-tools" aria-label="أدوات الرسم">
-                <button className={tool === "pen" ? "active" : ""} onClick={() => setTool("pen")} type="button" title="قلم" aria-label="قلم">✎</button>
-                <button className={tool === "marker" ? "active" : ""} onClick={() => setTool("marker")} type="button" title="قلم تمييز" aria-label="قلم تمييز">▰</button>
-                <button className={tool === "eraser" ? "active" : ""} onClick={() => setTool("eraser")} type="button" title="ممحاة" aria-label="ممحاة">▱</button>
+                <button className={tool === "pen" ? "active" : ""} onClick={() => setTool("pen")} type="button" title="قلم" aria-label="قلم"><UiIcon name="pen" size={21} /></button>
+                <button className={tool === "marker" ? "active" : ""} onClick={() => setTool("marker")} type="button" title="قلم تمييز" aria-label="قلم تمييز"><UiIcon name="marker" size={21} /></button>
+                <button className={tool === "eraser" ? "active" : ""} onClick={() => setTool("eraser")} type="button" title="ممحاة" aria-label="ممحاة"><UiIcon name="eraser" size={21} /></button>
                 <label className="color-picker" title="لون القلم"><input type="color" value={ink} onChange={(event) => setInk(event.target.value)} /><span style={{ backgroundColor: ink }} /></label>
                 <i />
-                <button type="button" onClick={() => restoreStrokeSnapshot("undo")} title="تراجع" aria-label="تراجع">↶</button>
-                <button type="button" onClick={() => restoreStrokeSnapshot("redo")} title="إعادة" aria-label="إعادة">↷</button>
-                <button type="button" onClick={clearCanvas} title="مسح" aria-label="مسح الكتابة">•••</button>
+                <button type="button" onClick={() => restoreStrokeSnapshot("undo")} title="تراجع" aria-label="تراجع"><UiIcon name="undo" size={21} /></button>
+                <button type="button" onClick={() => restoreStrokeSnapshot("redo")} title="إعادة" aria-label="إعادة"><UiIcon name="redo" size={21} /></button>
+                <button type="button" onClick={clearCanvas} title="مسح" aria-label="مسح الكتابة"><UiIcon name="more" size={21} /></button>
               </div>
               <label className="pen-only-toggle"><input type="checkbox" checked={penOnly} onChange={(event) => setPenOnly(event.target.checked)} /><span>قلم فقط</span></label>
-              <button className={`organize-button ${selectedNote?.organization.state === "queued" ? "queued" : ""}`} type="button" onClick={queueForOrganization} disabled={selectedNote?.organization.state === "queued"}><span>✦</span> {selectedNote?.organization.state === "queued" ? "بانتظار التنظيم" : "أرسلها للتنظيم"}</button>
+              <button className={`organize-button ${selectedNote?.organization.state === "queued" ? "queued" : ""}`} type="button" onClick={queueForOrganization} disabled={selectedNote?.organization.state === "queued"}><UiIcon name="sparkles" size={18} /> {selectedNote?.organization.state === "queued" ? "بانتظار التنظيم" : "أرسلها للتنظيم"}</button>
+            </div>
+            <div className="paper-wrap">
+              {selectedNote && <HandwritingCanvas noteId={selectedNote.id} strokes={selectedNote.strokes} legacyDrawing={selectedNote.drawing} tool={tool} ink={ink} penOnly={penOnly} onStrokeStart={markStrokeStarted} onAddStroke={addStroke} />}
+              {selectedNote && !selectedNote.strokes.length && !selectedNote.drawing && <div className="canvas-placeholder"><UiIcon name="pen" size={42} /><p>ابدأ الكتابة أو الرسم بالقلم هنا</p><small>هذه الورقة لك؛ اكتب أولًا ورتّب الفكرة لاحقًا</small></div>}
             </div>
           </div>
         </section>
@@ -1149,7 +1268,7 @@ export default function Home() {
       {settingsOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSettingsOpen(false); }}>
           <section className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="github-title">
-            <div className="modal-header"><div><span className="github-logo">GH</span><div><h2 id="github-title">المستودع الخاص للبيانات</h2><p>الواجهة عامة، أما ملاحظاتك فتذهب إلى هذا المستودع فقط.</p></div></div><button type="button" onClick={() => setSettingsOpen(false)} aria-label="إغلاق">×</button></div>
+            <div className="modal-header"><div><span className="github-logo"><UiIcon name="cloud" size={23} /></span><div><small>مزامنة آمنة</small><h2 id="github-title">المستودع الخاص للبيانات</h2><p>الواجهة عامة، أما ملاحظاتك فتذهب إلى هذا المستودع فقط.</p></div></div><button type="button" onClick={() => setSettingsOpen(false)} aria-label="إغلاق"><UiIcon name="x" size={20} /></button></div>
             <div className="security-note"><b>مهم:</b> استخدم رمزًا جديدًا محدودًا بالمستودع <code>doraemon-workspace-data</code> وبصلاحية <code>Contents: read/write</code>. لا تستخدم الرمز الذي ظهر سابقًا في المحادثة.</div>
             <div className="field-grid">
               <label><span>اسم المستخدم</span><input value={githubConfig.owner} onChange={(event) => changeGithubConfig({ ...githubConfig, owner: event.target.value.trim() })} placeholder="annta140-bit" dir="ltr" disabled={syncInFlight} /></label>
@@ -1159,7 +1278,7 @@ export default function Home() {
               <label className="token-field"><span>رمز الوصول المحدود</span><input value={githubToken} onChange={(event) => setGithubToken(event.target.value.trim())} placeholder="github_pat_…" type="password" dir="ltr" autoComplete="off" disabled={syncInFlight} /></label>
             </div>
             <div className={`sync-message ${syncState}`}>{syncState === "syncing" && <i />} {syncMessage}</div>
-            <div className="sync-explanation"><span>✓ حفظ محلي فوري</span><span>✓ رفع تلقائي بعد 3 ثوانٍ</span><span>✓ تعارضات بلا فقدان</span></div>
+            <div className="sync-explanation"><span><UiIcon name="done" size={13} /> حفظ محلي فوري</span><span><UiIcon name="done" size={13} /> رفع تلقائي بعد 3 ثوانٍ</span><span><UiIcon name="done" size={13} /> تعارضات بلا فقدان</span></div>
             <div className="modal-actions"><button className="secondary" type="button" onClick={() => void pullFromGithub()} disabled={syncInFlight}>جلب ودمج بأمان</button><button className="primary" type="button" onClick={() => void pushToGithub(true)} disabled={syncInFlight}>مزامنة الآن</button></div>
             <p className="modal-footnote">تُحفظ كل ملاحظة في ملف مستقل، لذلك لا يستطيع جهاز قديم استبدال مساحة العمل كاملة.</p>
           </section>
@@ -1169,7 +1288,7 @@ export default function Home() {
       {projectModalOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setProjectModalOpen(false); }}>
           <section className="settings-modal project-modal" role="dialog" aria-modal="true" aria-labelledby="project-title">
-            <div className="modal-header"><div><span className="project-modal-icon">▱</span><div><h2 id="project-title">مشروع جديد</h2><p>أنشئ مشروعًا حقيقيًا واربط الملاحظات به.</p></div></div><button type="button" onClick={() => setProjectModalOpen(false)} aria-label="إغلاق">×</button></div>
+            <div className="modal-header"><div><span className="project-modal-icon"><UiIcon name="folder" size={23} /></span><div><small>تنظيم العمل</small><h2 id="project-title">مشروع جديد</h2><p>أنشئ مشروعًا حقيقيًا واربط الملاحظات به.</p></div></div><button type="button" onClick={() => setProjectModalOpen(false)} aria-label="إغلاق"><UiIcon name="x" size={20} /></button></div>
             <form className="project-form" onSubmit={createProject}>
               <label><span>اسم المشروع</span><input autoFocus value={projectDraft.name} onChange={(event) => setProjectDraft({ ...projectDraft, name: event.target.value })} placeholder="مثال: إطلاق المنتج" /></label>
               <div><label className="icon-field"><span>الرمز</span><input value={projectDraft.icon} onChange={(event) => setProjectDraft({ ...projectDraft, icon: event.target.value })} /></label><label><span>الإجراء التالي</span><input value={projectDraft.nextAction} onChange={(event) => setProjectDraft({ ...projectDraft, nextAction: event.target.value })} placeholder="ما الخطوة القادمة؟" /></label></div>
@@ -1179,7 +1298,7 @@ export default function Home() {
         </div>
       )}
 
-      {toast && <div className="toast" role="status"><span>✓</span>{toast}</div>}
+      {toast && <div className="toast" role="status"><span><UiIcon name="done" size={15} /></span>{toast}</div>}
     </main>
   );
 }
